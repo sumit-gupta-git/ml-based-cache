@@ -42,6 +42,8 @@ def predict():
         expected_features = [
             'Items',
             'AvgReaccess',
+            'Miss',
+            'Hit'
         ]
 
         input_values = []
