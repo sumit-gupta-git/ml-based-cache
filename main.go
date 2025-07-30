@@ -7,6 +7,7 @@ import (
 
 	"ml-based-cache/internal/cache"
 	"ml-based-cache/internal/generator"
+	"ml-based-cache/internal/generator/random"
 	"ml-based-cache/internal/utils"
 )
 
@@ -15,15 +16,28 @@ type Results struct {
 }
 
 func main() {
+	// LFU Bias
+	for i := 0; i < 10; i++ {
+		random.GenerateSplitBiasedRandom(10000, 0, 100, 5, 200)
+	}
+
+	// // FIFO Bias
 	// for i := 0; i < 10; i++ {
-	// 	for j := 0; j < 10; j++ {
-	// 		for k := 0; k < 10; k++ {
-	// 			random.GenerateBiasedRandom(500, 0, 60, float64(i*10), float64(j*10))
-	// 		}
+	// 	for j := 0; j < 900; j++ {
+	// 		random.GenerateRepeatBias(500, 0, 100, float64(i*10))
 	// 	}
 	// }
-	// for k := 0; k < 100; k++ {
-	// 	random.GenerateBiasedRandom(500, 0, 60, float64(0), float64(0))
+	//
+	// // LRU Bias
+	// for i := 0; i <= 9; i++ {
+	// 	for j := 0; j < 100; j++ {
+	// 		random.GenerateRecencyBias(10000, 0, 100, float64(i*10))
+	// 	}
+	// }
+	//
+	// // Random
+	// for k := 0; k < 1000; k++ {
+	// 	random.GenerateRandomArray(10000, 0, 100)
 	// }
 
 	files, err := utils.ReadJSONArraysFromDir("./data")
@@ -35,12 +49,12 @@ func main() {
 		Results: make([]cache.Res, 0),
 	}
 	for _, v := range files {
-		c := cache.NewCache(25)
+		c := cache.NewCache(15)
 		res := c.Simulate(generator.Converter(v), nil)
 		r.Results = append(r.Results, res)
 	}
 
-	f, _ := os.Create("./data/dataset/testdata")
+	f, _ := os.Create("./py/train_data.json")
 
 	data, _ := json.Marshal(&r.Results)
 

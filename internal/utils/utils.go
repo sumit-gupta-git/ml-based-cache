@@ -52,3 +52,13 @@ func ReadJSONArraysFromDir(dir string) ([][]int, error) {
 
 	return result, nil
 }
+
+func CountUniques(arr []int) int {
+	uniqueMap := make(map[int]struct{})
+
+	for _, val := range arr {
+		uniqueMap[val] = struct{}{}
+	}
+
+	return len(uniqueMap)
+}

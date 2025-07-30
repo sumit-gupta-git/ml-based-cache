@@ -2,11 +2,14 @@ package algos
 
 import (
 	"sort"
+	"time"
 
 	"ml-based-cache/internal/models"
 )
 
 func LRUReplace(slots *[]*models.CacheItem, item *models.CacheItem) {
+	item.EntryTime = time.Now()
+
 	for k, v := range *slots {
 		if v == nil {
 			(*slots)[k] = item
