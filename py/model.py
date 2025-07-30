@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import joblib
 
 #dataset
 df = pd.read_csv("train_data.csv")
@@ -59,4 +60,9 @@ print(score)
 #classification report
 print(classification_report(y_pred,y_test, zero_division=0))
 
+model_filename = "model.pkl"
+joblib.dump(best_model, model_filename)
+
+scaler_filename = "scaler.pkl"
+joblib.dump(scaler, scaler_filename)
 
