@@ -11,7 +11,7 @@ df=df.drop(['Unnamed: 0'],axis=1)
 print(df.info())
 
 #independent features and dependent features
-X=df[['LFUAvgReaccess','Frequency_skewness','Entropy_of_sequence','Ratio_of_unique_items','Reused_distance_variance','Recency_frequency_ratio']]
+X=df[['LFUAvgReaccess','LRUAvgReaccess','Frequency_skewness','Entropy_of_sequence','Ratio_of_unique_items','Reused_distance_variance','Recency_frequency_ratio']]
 y=df["Best_algo_encoded"]
 
 #train test split
