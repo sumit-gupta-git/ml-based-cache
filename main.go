@@ -35,10 +35,10 @@ func main() {
 	// 	}
 	// }
 	//
-	// // Random
-	// for k := 0; k < 1000; k++ {
-	// 	random.GenerateRandomArray(10000, 0, 100)
-	// }
+	// Random
+	for k := 0; k < 1000; k++ {
+		random.GenerateRandomArray(10000, 0, 100)
+	}
 
 	files, err := utils.ReadJSONArraysFromDir("./data")
 	if err != nil {
@@ -54,7 +54,7 @@ func main() {
 		r.Results = append(r.Results, res)
 	}
 
-	f, _ := os.Create("./py/train_data.json")
+	f, _ := os.Create("./py/test_data2.json")
 
 	data, _ := json.Marshal(&r.Results)
 
