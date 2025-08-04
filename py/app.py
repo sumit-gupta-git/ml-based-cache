@@ -233,10 +233,10 @@ def predict():
         expected_features = [
             'Items',
             'LFUAvgReaccess',
-            'LFUHit',
+            'LFUHits',
             'LFUMiss',
             'LRUAvgReaccess',
-            'LRUHit',
+            'LRUHits',
             'LRUMiss'  
         ]
         
@@ -288,4 +288,8 @@ def predict():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+
+# 0 -> NA
+# 1 -> LRU
+# 2 -> LFU
 

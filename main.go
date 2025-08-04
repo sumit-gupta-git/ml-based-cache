@@ -16,27 +16,24 @@ type Results struct {
 }
 
 func main() {
+	Execute()
+}
+
+func Training() {
 	// LFU Bias
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 10000; i++ {
 		random.GenerateSplitBiasedRandom(10000, 0, 100, 5, 200)
 	}
 
-	// // FIFO Bias
-	// for i := 0; i < 10; i++ {
-	// 	for j := 0; j < 900; j++ {
-	// 		random.GenerateRepeatBias(500, 0, 100, float64(i*10))
-	// 	}
-	// }
-	//
-	// // LRU Bias
-	// for i := 0; i <= 9; i++ {
-	// 	for j := 0; j < 100; j++ {
-	// 		random.GenerateRecencyBias(10000, 0, 100, float64(i*10))
-	// 	}
-	// }
-	//
+	// LRU Bias
+	for i := 0; i <= 9; i++ {
+		for j := 0; j < 1000; j++ {
+			random.GenerateRecencyBias(10000, 0, 100, float64(i*10))
+		}
+	}
+
 	// Random
-	for k := 0; k < 1000; k++ {
+	for k := 0; k < 10000; k++ {
 		random.GenerateRandomArray(10000, 0, 100)
 	}
 
@@ -50,7 +47,7 @@ func main() {
 	}
 	for _, v := range files {
 		c := cache.NewCache(15)
-		res := c.Simulate(generator.Converter(v), nil)
+		res := c.SimulateTraining(generator.Converter(v))
 		r.Results = append(r.Results, res)
 	}
 
