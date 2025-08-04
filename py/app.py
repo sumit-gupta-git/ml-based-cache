@@ -199,6 +199,8 @@ try:
     model = joblib.load(MODEL_PATH)
     scaler = joblib.load(SCALER_PATH)
     print(f"Model loaded successfully from {MODEL_PATH}")
+    print(f"Scaler loaded successfully from {SCALER_PATH}")
+
     
 except Exception as e:
     print(f"ERROR: Could not load model or scaler. Please ensure '{MODEL_PATH}' and '{SCALER_PATH}' exist in the same directory as app.py. Error: {e}")
@@ -220,8 +222,8 @@ def predict():
         "Recency_frequency_ratio": float
     }
     """
-    if model is None :
-        return jsonify({"error": "Model not loaded on server. Please check server logs for details."}), 500
+    if model is None or scaler is None:
+        return jsonify({"error": "Model or Scaler not loaded on server. Please check server logs for details."}), 500
 
     try:
         data = request.get_json(force=True) 
