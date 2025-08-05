@@ -5,12 +5,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"math/rand"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 
 	"ml-based-cache/internal/cache"
 	"ml-based-cache/internal/generator"
+	"ml-based-cache/internal/generator/random"
 	"ml-based-cache/internal/models"
 	"ml-based-cache/internal/utils"
 )
@@ -35,7 +39,7 @@ type Result struct {
 }
 
 func Execute() {
-	arr := RandomCache(10_000, 0, 100)
+	arr := RandomCache(10_000, 200, 10)
 	c := cache.NewCache(15)
 
 	result := Simulate(c, arr)
@@ -140,13 +144,56 @@ func QueryModel(data string, curr AlgoType) AlgoType {
 	}
 }
 
-func RandomCache(size, z, b int) *[]models.CacheItem {
+func RandomCache(size int, splits int, n int) *[]models.CacheItem {
 	src := rand.NewSource(time.Now().UnixNano())
 	r := rand.New(src)
 
-	arr := make([]int, size)
-	for i := 0; i < size; i++ {
-		arr[i] = r.Intn(b-z+1) + z
+	err := filepath.Walk("./data", func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if path == "./data" {
+			return nil
+		}
+
+		if info.IsDir() {
+			return os.RemoveAll(path)
+		} else {
+			return os.Remove(path)
+		}
+	})
+
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+	} else {
+		fmt.Println("All files deleted successfully.")
+	}
+
+	for i := 0; i < n; i++ {
+		x := r.Intn(3)
+
+		if x == 0 {
+			fmt.Println("Generated Random")
+			random.GenerateRandomArray(size, 0, 100)
+		} else if x == 1 {
+			fmt.Println("Generate Split Bias")
+			random.GenerateSplitBiasedRandom(size, 0, 100, 5, splits)
+		} else if x == 2 {
+			fmt.Println("Generated Recency Bias")
+			random.GenerateRecencyBias(size, 0, 100, 90)
+		}
+	}
+
+	total, err := utils.ReadJSONArraysFromDir("./data")
+	if err != nil {
+		log.Fatal("Error Reading Director ./data")
+		return &[]models.CacheItem{}
+	}
+
+	arr := make([]int, 0, size*n)
+	for _, v := range total {
+		arr = append(arr, v...)
 	}
 
 	return generator.Converter(arr)
