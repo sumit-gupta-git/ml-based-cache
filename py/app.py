@@ -240,12 +240,11 @@ def predict():
             'LRUMiss'  
         ]
         
-        input_values = []
+        df = pd.read_csv("train_data.csv")
         for feature_name in expected_features:
-            if feature_name not in data :
-                return jsonify({"error": f"Missing required feature: '{feature_name}' in the request data."}), 400
-            input_values.append(data[feature_name])
-
+            if (feature_name not in data) :
+                data[feature_name] = df[feature_name].mean()   
+            
         missing_keys = [key for key in expected_features if key not in data]
         if missing_keys:
             return jsonify({"error": f"Missing required keys in request data: {', '.join(missing_keys)}"}), 400
@@ -256,7 +255,8 @@ def predict():
             if key != 'Items' and not isinstance(data[key], (int, float)):
                 return jsonify({"error": f"Invalid type for '{key}'. Must be numeric."}), 400
 
-        #features_array = np.array(input_values).reshape(1, -1)
+        # features_array = np.array(input_values).reshape(1, -1)
+        # print(features_array)
         features = extract_features(data["Items"])
         
         
@@ -270,7 +270,8 @@ def predict():
             features['Reused_distance_variance'],
             features['Recency_frequency_ratio']
         ]
-        
+          
+
         feature_vector= np.array(feature_vector).reshape(1,-1)
         scaled_vector = scaler.transform(feature_vector)
         
