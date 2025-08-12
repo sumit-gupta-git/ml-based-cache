@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"math/rand"
 	"net/http"
@@ -39,7 +39,7 @@ type Result struct {
 }
 
 func Execute() {
-	arr := RandomCache(10_000, 200, 10)
+	arr := RandomCache(10_000, 200, 5)
 	c := cache.NewCache(15)
 
 	result := Simulate(c, arr)
@@ -48,15 +48,34 @@ func Execute() {
 
 	fmt.Println("\n\nRESULTS\n\n")
 	fmt.Println(string(data))
-}
 
+	// arr = RandomCache(10_000, 200, 5)
+	c = cache.NewCache(15)
+
+	result = SimulateLRU(c, arr)
+
+	data, _ = json.Marshal(result)
+
+	// arr = RandomCache(10_000, 200, 5)
+	c = cache.NewCache(15)
+
+	fmt.Println("\n\nRESULTS - LRU\n\n")
+	fmt.Println(string(data))
+
+	result = SimulateLFU(c, arr)
+
+	data, _ = json.Marshal(result)
+
+	fmt.Println("\n\nRESULTS - LFU\n\n")
+	fmt.Println(string(data))
+}
 func Simulate(globalCache *cache.Cache, arr *[]models.CacheItem) Result {
 	itemsBatch := make([]models.CacheItem, 0, 1000)
 	var currPolicy AlgoType = LRU
 	currCache := cache.NewCache(15)
 	processed := 0
 
-	for _, v := range *arr {
+	for k, v := range *arr {
 		if currPolicy == LRU {
 			currCache.AccessLRU(&v)
 		} else if currPolicy == LFU {
@@ -66,8 +85,8 @@ func Simulate(globalCache *cache.Cache, arr *[]models.CacheItem) Result {
 		itemsBatch = append(itemsBatch, v)
 		processed++
 
-		// After every 1000 items, query model
-		if processed%1000 == 0 {
+		// After every 10000 items, query model
+		if processed%10000 == 0 {
 			batchRes := cache.Res{Items: generator.ReConverter(&itemsBatch)}
 			if currPolicy == LRU {
 				batchRes = cache.Res{
@@ -88,7 +107,102 @@ func Simulate(globalCache *cache.Cache, arr *[]models.CacheItem) Result {
 			data, _ := json.Marshal(batchRes)
 
 			currPolicy = QueryModel(string(data), currPolicy)
-			fmt.Printf("Using %d\n", currPolicy)
+			fmt.Println(k)
+			// fmt.Printf("Using %d\n", currPolicy)
+
+			// Update global cache stats
+			globalCache.Hits += currCache.Hits
+			globalCache.Misses += currCache.Misses
+			globalCache.AvgAccessTime = append(globalCache.AvgAccessTime, currCache.AvgAccessTime...)
+
+			currCache.Misses = 0
+			currCache.Hits = 0
+			currCache.AvgAccessTime = make([]int64, 0)
+
+			itemsBatch = itemsBatch[:0]
+		}
+	}
+
+	return Result{
+		Hits: globalCache.Hits,
+		Miss: globalCache.Misses,
+	}
+}
+
+func SimulateLRU(globalCache *cache.Cache, arr *[]models.CacheItem) Result {
+	itemsBatch := make([]models.CacheItem, 0, 1000)
+	// var currPolicy AlgoType = LRU
+	currCache := cache.NewCache(15)
+	processed := 0
+
+	for _, v := range *arr {
+		currCache.AccessLRU(&v)
+
+		itemsBatch = append(itemsBatch, v)
+		processed++
+
+		// After every 10000 items, query model
+		if processed%10000 == 0 {
+			// batchRes := cache.Res{Items: generator.ReConverter(&itemsBatch)}
+
+			// batchRes = cache.Res{
+			// 	Items:          generator.ReConverter(&itemsBatch),
+			// 	LRUHits:        currCache.Hits,
+			// 	LRUMiss:        currCache.Misses,
+			// 	LRUAvgReaccess: utils.Average(currCache.AvgAccessTime),
+			// }
+
+			// data, _ := json.Marshal(batchRes)
+
+			// currPolicy = QueryModel(string(data), currPolicy)
+			// // fmt.Printf("Using %d\n", currPolicy)
+
+			// Update global cache stats
+			globalCache.Hits += currCache.Hits
+			globalCache.Misses += currCache.Misses
+			globalCache.AvgAccessTime = append(globalCache.AvgAccessTime, currCache.AvgAccessTime...)
+
+			currCache.Misses = 0
+			currCache.Hits = 0
+			currCache.AvgAccessTime = make([]int64, 0)
+
+			itemsBatch = itemsBatch[:0]
+		}
+	}
+
+	return Result{
+		Hits: globalCache.Hits,
+		Miss: globalCache.Misses,
+	}
+}
+
+func SimulateLFU(globalCache *cache.Cache, arr *[]models.CacheItem) Result {
+	itemsBatch := make([]models.CacheItem, 0, 1000)
+	// var currPolicy AlgoType = LFU
+	currCache := cache.NewCache(15)
+	processed := 0
+
+	for _, v := range *arr {
+		currCache.AccessLFU(&v)
+
+		itemsBatch = append(itemsBatch, v)
+		processed++
+
+		// After every 10000 items, query model
+		if processed%10000 == 0 {
+			// batchRes := cache.Res{Items: generator.ReConverter(&itemsBatch)}
+
+			// batchRes = cache.Res{
+			// 	Items:          generator.ReConverter(&itemsBatch),
+			// 	LFUHits:        currCache.Hits,
+			// 	LFUMiss:        currCache.Misses,
+			// 	LFUAvgReaccess: utils.Average(currCache.AvgAccessTime),
+			// }
+
+			// data, _ := json.Marshal(batchRes)
+
+			// currPolicy = QueryModel(string(data), currPolicy)
+			// fmt.Printf("Using %d\n", currPolicy)
 
 			// Update global cache stats
 			globalCache.Hits += currCache.Hits
@@ -116,6 +230,8 @@ func QueryModel(data string, curr AlgoType) AlgoType {
 		return curr
 	}
 
+	// fmt.Println(data)
+
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
@@ -126,16 +242,19 @@ func QueryModel(data string, curr AlgoType) AlgoType {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("Error reading response:", err)
 		return curr
 	}
 
+	// fmt.Println(string(body))
+
 	var p Prediction
 	json.Unmarshal(body, &p)
 
 	if p.Res == 0 {
+		fmt.Println("NA")
 		return curr
 	} else if p.Res == 1 {
 		return LRU

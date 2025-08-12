@@ -3,6 +3,7 @@ import joblib
 import numpy as np
 import pandas as pd 
 
+df = pd.read_csv("train_data.csv")
 
 def gen_dict(items_array):
     if not isinstance(items_array, list):
@@ -176,7 +177,7 @@ def extract_features(items_array):
         'Avg_item_freq': get_avg_item_freq(items_array),
         'Frequency_skewness': get_item_skewness(items_array),
         'Max_consecutive_duplicates': get_max_consecutive_duplicates(items_array),
-        'Entropy_of_items_array': get_entropy_of_items_array(items_array),
+        'Entropy_of_sequence': get_entropy_of_items_array(items_array),
         'Ratio_of_unique_items': get_unique_element(items_array) / len(items_array) if len(items_array) > 0 else 0,
         'Median_reaccess_time': median_reaccess_time(items_array),
         'Percent_items_reused': percent_items_reused(items_array),
@@ -206,7 +207,7 @@ except Exception as e:
     print(f"ERROR: Could not load model or scaler. Please ensure '{MODEL_PATH}' and '{SCALER_PATH}' exist in the same directory as app.py. Error: {e}")
     model = None
     scaler = None
-     
+
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -222,6 +223,7 @@ def predict():
         "Recency_frequency_ratio": float
     }
     """
+
     if model is None or scaler is None:
         return jsonify({"error": "Model or Scaler not loaded on server. Please check server logs for details."}), 500
 
@@ -240,9 +242,9 @@ def predict():
             'LRUMiss'  
         ]
         
-        df = pd.read_csv("train_data.csv")
+        
         for feature_name in expected_features:
-            if (feature_name not in data) :
+            if (data[feature_name] == 0) :
                 data[feature_name] = df[feature_name].mean()   
             
         missing_keys = [key for key in expected_features if key not in data]
@@ -259,21 +261,29 @@ def predict():
         # print(features_array)
         features = extract_features(data["Items"])
         
-        
+        feature_names = [
+            'LFUAvgReaccess',
+            'LRUAvgReaccess',
+            'Frequency_skewness',
+            'Entropy_of_sequence',
+            'Ratio_of_unique_items',
+            'Reused_distance_variance',
+            'Recency_frequency_ratio'
+        ]
         
         feature_vector = [
-            data["LRUAvgReaccess"],
             data["LFUAvgReaccess"],
+            data["LRUAvgReaccess"],
             features['Frequency_skewness'],
-            features['Entropy_of_items_array'],  
+            features['Entropy_of_sequence'],  
             features['Ratio_of_unique_items'],
             features['Reused_distance_variance'],
             features['Recency_frequency_ratio']
         ]
           
 
-        feature_vector= np.array(feature_vector).reshape(1,-1)
-        scaled_vector = scaler.transform(feature_vector)
+        feature_df= pd.DataFrame(data=[feature_vector],columns=feature_names)
+        scaled_vector = scaler.transform(feature_df)
         
         prediction_encoded = model.predict(scaled_vector)[0] 
 
@@ -293,4 +303,3 @@ if __name__ == '__main__':
 # 0 -> NA
 # 1 -> LRU
 # 2 -> LFU
-
